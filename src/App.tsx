@@ -88,7 +88,7 @@ function App() {
 
   useEffect(() => {
     if (!db) return;
-    
+    let isMounted = true;
     const currentDb = db;
     
     async function loadTasks() {
@@ -97,14 +97,18 @@ function App() {
           "SELECT * FROM tasks WHERE list_id = ? ORDER BY completed ASC, created_at DESC",
           [activeList]
         );
-        setTasks(tasksData);
+        if (isMounted) setTasks(tasksData);
       } catch (err) {
-        console.error("Failed to load tasks:", err);
-        setError("Failed to load tasks");
+        if (isMounted) {
+          console.error("Failed to load tasks:", err);
+          setError("Failed to load tasks");
+        }
       }
     }
     
     loadTasks();
+    
+    return () => { isMounted = false; };
   }, [db, activeList]);
 
   const { completedCount, totalCount, progressPercent } = useMemo(() => {
@@ -127,8 +131,8 @@ function App() {
     if (!newTaskTitle.trim() || !db || actionLoading) return;
     
     setActionLoading(true);
+    const tempId = Date.now();
     try {
-      const tempId = Date.now();
       setTasks(prev => [...prev, {
         id: tempId,
         title: newTaskTitle.trim(),
@@ -142,46 +146,63 @@ function App() {
         "INSERT INTO tasks (title, list_id) VALUES (?, ?)",
         [newTaskTitle.trim(), activeList]
       );
+
+      const insertedTasks = await db.select<Task[]>(
+        "SELECT * FROM tasks WHERE list_id = ? ORDER BY id DESC LIMIT 1",
+        [activeList]
+      );
+      if (insertedTasks.length > 0) {
+        const realTask = insertedTasks[0];
+        setTasks(prev => prev.map(t => t.id === tempId ? realTask : t));
+      }
     } catch (err) {
       console.error("Failed to add task:", err);
       setError("Failed to add task");
-      const tasksData = await db.select<Task[]>(
-        "SELECT * FROM tasks WHERE list_id = ? ORDER BY completed ASC, created_at DESC",
-        [activeList]
-      );
-      setTasks(tasksData);
+      try {
+        const tasksData = await db.select<Task[]>(
+          "SELECT * FROM tasks WHERE list_id = ? ORDER BY completed ASC, created_at DESC",
+          [activeList]
+        );
+        setTasks(tasksData);
+      } catch {
+        // Recovery failed, tasks may be stale
+      }
     } finally {
       setActionLoading(false);
     }
   }, [newTaskTitle, db, activeList, actionLoading]);
 
-  const handleToggleTask = useCallback(async (task: Task) => {
+  const handleToggleTask = useCallback(async (id: number, completed: boolean) => {
     if (!db) return;
     
     setTasks(prev => prev.map(t => 
-      t.id === task.id ? { ...t, completed: !t.completed } : t
+      t.id === id ? { ...t, completed: !completed } : t
     ));
     
     try {
       await db.execute(
         "UPDATE tasks SET completed = ? WHERE id = ?",
-        [task.completed ? 0 : 1, task.id]
+        [!completed ? 1 : 0, id]
       );
     } catch (err) {
       console.error("Failed to toggle task:", err);
       setError("Failed to update task");
       setTasks(prev => prev.map(t => 
-        t.id === task.id ? { ...t, completed: task.completed } : t
+        t.id === id ? { ...t, completed } : t
       ));
     }
   }, [db]);
 
   const handleDeleteTask = useCallback(async (id: number) => {
     if (!db) return;
+    setActionLoading(true);
     
-    const previousTasks = [...tasks];
-    setTasks(prev => prev.filter(t => t.id !== id));
-    
+    let previousTasks: Task[] = [];
+    setTasks(prev => {
+      previousTasks = [...prev];
+      return prev.filter(t => t.id !== id);
+    });
+
     try {
       await db.execute("DELETE FROM tasks WHERE id = ?", [id]);
     } catch (err) {
@@ -189,7 +210,8 @@ function App() {
       setError("Failed to delete task");
       setTasks(previousTasks);
     }
-  }, [db, tasks]);
+    setActionLoading(false);
+  }, [db]);
 
   const handleAddList = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,7 +321,9 @@ function App() {
               onClick={() => setActiveList(list.id)}
               onContextMenu={(e) => {
                 e.preventDefault();
-                if (lists.length > 1) handleDeleteList(list.id);
+                if (lists.length > 1 && window.confirm(`Delete "${list.name}" and all its tasks?`)) {
+                  handleDeleteList(list.id);
+                }
               }}
               aria-pressed={activeList === list.id}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
@@ -410,7 +434,7 @@ function App() {
                   }`}
                 >
                   <button
-                    onClick={() => handleToggleTask(task)}
+                    onClick={() => handleToggleTask(task.id, task.completed)}
                     aria-label={task.completed ? "Mark as incomplete" : "Mark as complete"}
                     aria-pressed={task.completed}
                     className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-privacy-green focus:ring-offset-2 ${

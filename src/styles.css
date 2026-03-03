@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #1e293b;
+  background-color: #f8fafc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.privacy-badge {
+  @apply inline-flex items-center gap-1 px-2 py-1 bg-privacy-light text-privacy-green text-xs font-medium rounded-full;
+}
+
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200;
+}
+
+.btn-primary {
+  @apply btn bg-privacy-green text-white hover:bg-privacy-dark;
+}
+
+.btn-secondary {
+  @apply btn bg-white border border-surface-border text-text-secondary hover:bg-gray-50;
+}
+
+.input {
+  @apply w-full px-3 py-2 border border-surface-border rounded-lg text-text-primary;
+  @apply focus:outline-none focus:ring-2 focus:ring-privacy-green focus:border-privacy-green;
+}
+
+.card {
+  @apply bg-white rounded-xl border border-surface-border p-4;
+}

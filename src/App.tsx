@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Database from "@tauri-apps/plugin-sql";
+import { Shield, Download, ClipboardList, Check } from "lucide-react";
 
 interface Task {
   id: number;
@@ -264,7 +265,7 @@ function App() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <div className="text-2xl mb-2">🔒</div>
+          <Shield className="w-8 h-8 text-privacy-green mb-2" />
           <p className="text-text-secondary">Loading...</p>
         </div>
       </div>
@@ -282,10 +283,10 @@ function App() {
       <aside className="w-56 bg-surface-card border-r border-surface-border flex flex-col">
         <div className="p-4 border-b border-surface-border">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🔒</span>
+            <Shield className="w-5 h-5 text-privacy-green" />
             <span className="font-semibold text-text-primary">LocalTasks</span>
           </div>
-          <p className="text-xs text-text-muted mt-1">Your data stays on this device</p>
+          <p className="text-xs text-text-muted mt-1">Private &amp; offline</p>
         </div>
         
         <nav className="flex-1 p-2 overflow-y-auto">
@@ -346,7 +347,7 @@ function App() {
         
         <div className="p-4 border-t border-surface-border">
           <button onClick={handleExportData} className="btn-secondary w-full text-sm">
-            📤 Export Data
+            <Download className="w-4 h-4" /> Export Data
           </button>
         </div>
       </aside>
@@ -363,7 +364,7 @@ function App() {
               </p>
             </div>
             <div className="privacy-badge">
-              <span>✓</span>
+              <Check className="w-3 h-3" />
               <span>Offline Only</span>
             </div>
           </div>
@@ -393,7 +394,7 @@ function App() {
 
           {tasks.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-4xl mb-3">📝</div>
+              <ClipboardList className="w-10 h-10 text-text-muted mb-3" />
               <p className="text-text-secondary">No tasks yet</p>
               <p className="text-sm text-text-muted mt-1">
                 Add your first task above
@@ -447,8 +448,8 @@ function App() {
         </div>
 
         <footer className="bg-surface-card border-t border-surface-border px-6 py-3">
-          <p className="text-xs text-text-muted text-center">
-            🔒 Your data never leaves this device. No accounts, no cloud, no tracking.
+          <p className="text-xs text-text-muted text-center flex items-center justify-center gap-1">
+            <Shield className="w-3.5 h-3.5" /> All data stored locally
           </p>
         </footer>
       </main>
